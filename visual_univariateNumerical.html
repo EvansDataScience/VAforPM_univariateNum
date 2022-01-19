@@ -211,50 +211,75 @@ base1=ggplot(data=lunchDF, aes(x=Beneficiaries,Count))
 bar1=base1+geom_bar(stat = &quot;identity&quot;)
 bar1</code></pre>
 <p>As we have many values, it is difficult to share a clear insight. However, we could try a different idea:</p>
-<pre class="r"><code>CountyCount_LR=aggregate(data=eduwa,
+<pre class="r"><code># sum of reduced lunches given per county
+CountyCount_LR=aggregate(data=eduwa,
                          Reduced.Lunch~County,
                          FUN=sum)</code></pre>
 <p>Now you have much less cases, just 39. Let’s order by count in decreasing order:</p>
-<pre class="r"><code>CountyCount_LR=CountyCount_LR[order(-CountyCount_LR$Reduced.Lunch),]
+<pre class="r"><code># order and minus (-) for decreasing
+CountyCount_LR=CountyCount_LR[order(-CountyCount_LR$Reduced.Lunch),]
 head(CountyCount_LR,10)</code></pre>
-<p>Let’s get the percent, and cummulative percent and cummulative count:</p>
+<p>Let’s add the percent, and cummulative percent and cummulative count:</p>
 <pre class="r"><code>CountyCount_LR$Percent=CountyCount_LR$Reduced.Lunch/sum(CountyCount_LR$Reduced.Lunch)
 CountyCount_LR$PercentCum=cumsum(CountyCount_LR$Percent)
 CountyCount_LR$Reduced.Lunch.Cum=cumsum(CountyCount_LR$Reduced.Lunch)
 # see some:
 head(CountyCount_LR,20)</code></pre>
 <p>Let’s plot the cummulative count as a barplot:</p>
-<pre class="r"><code>row.names(CountyCount_LR)=NULL
-base2=ggplot(data=CountyCount_LR,
+<pre class="r"><code>base2=ggplot(data=CountyCount_LR,
              aes(x=County,Reduced.Lunch.Cum)) + theme_classic()
+base3=base2+scale_x_discrete()
+bar2=base3  +geom_bar(stat = &quot;identity&quot;)
+bar2=bar2 + coord_flip() 
+bar2</code></pre>
+<p>The previous plot is NOT informative, this is better:</p>
+<pre class="r"><code># altering previous base3
 base3=base2+scale_x_discrete(limits=CountyCount_LR$County)
 bar2=base3  +geom_bar(stat = &quot;identity&quot;)
 bar2=bar2 + coord_flip() 
 bar2</code></pre>
-<p>We could use the other columns to show the Pareto principle:</p>
+<p>We could redo <strong>bar2</strong> by using the other columns to show the Pareto principle:</p>
 <pre class="r"><code>bar2=base3  +geom_bar(stat = &quot;identity&quot;,color=&#39;grey90&#39;,
-                      aes(fill=PercentCum&lt;0.8),show.legend = F)
-bar2=bar2 + coord_flip() + scale_fill_manual(values=c(NA,&quot;grey90&quot;))
+                      aes(fill=PercentCum&lt;0.8),
+                      show.legend = F)
+bar2=bar2 + coord_flip()
+
 bar2</code></pre>
-<pre class="r"><code>counties80=CountyCount_LR[CountyCount_LR$PercentCum&lt;0.8,&quot;County&quot;]
+<p>Above, we just altered the <em>border</em> of the bars (color); and we told ggplot to fill the bars <em>conditionally</em>. The default fill color was chosen. If you want to customize the fill color, do this:</p>
+<pre class="r"><code># I only need one fill color, that is why I put &#39;NA&quot;:
+bar2=bar2 +scale_fill_manual(values=c(NA,&quot;grey90&quot;))
+bar2</code></pre>
+<p>The last version tries to highlight some counties. This last step could help more:</p>
+<pre class="r"><code># this is a condition outside ggplot.
+# it says what counties add to 80%
+counties80=CountyCount_LR[CountyCount_LR$PercentCum&lt;0.8,&quot;County&quot;]
+
+# now we use that here, to alter the face of text:
 bar2=bar2 + theme(axis.text.y = element_text(face=ifelse(CountyCount_LR$County%in%counties80,&quot;bold&quot;,&quot;plain&quot;),size=9))
 bar2</code></pre>
-<p>The last plot shows the counties that altogether sum the 80% of reduced lunches offer in the state of Washington. Of course, there is pareto plot for this cases:</p>
-<pre class="r"><code>library(ggQC)
+<p>The last plot shows the counties that altogether sum the 80% of reduced lunches offer in the state of Washington. Of course, there is a propeo pareto plot for this cases:</p>
+<pre class="r"><code>library(ggQC) # install this previously
 
 base4=ggplot(data=CountyCount_LR,
              aes(x=County,y=Reduced.Lunch)) + theme_classic()
 pare1=base4 + stat_pareto() 
 pare1</code></pre>
-<p>However, some extra work might be needed:</p>
-<pre class="r"><code>pare1=pare1 + geom_hline(yintercept =61402,linetype=&quot;dashed&quot;) 
-pare1=pare1 + geom_vline(xintercept = 11,linetype=&quot;dashed&quot;) 
-pare1 + theme(axis.text.x = element_text(angle = 30, hjust = 1,face=ifelse(CountyCount_LR$County%in%counties80,&quot;bold&quot;,&quot;plain&quot;)))</code></pre>
+<p>That was fast. However, some extra work might be needed:</p>
+<pre class="r"><code># computing intercepts
+interX=length(counties80)
+interY=max(CountyCount_LR$Reduced.Lunch.Cum)*0.8
+
+# annotating intercepts
+pare2=pare1 + geom_vline(xintercept = interX,
+                         linetype=&quot;dashed&quot;, color=&#39;grey90&#39;) 
+pare2=pare2 + geom_hline(yintercept =interY,
+                         linetype=&quot;dashed&quot;, color=&#39;grey90&#39;) 
+pare2 + theme(axis.text.x = element_text(angle = 30, hjust = 1,face=ifelse(CountyCount_LR$County%in%counties80,&quot;bold&quot;,&quot;plain&quot;)))</code></pre>
 <p>All these plots give us an idea of <strong>distribution</strong>: how lunches are distributed among counties.</p>
-<p>Let’s pay attention now to the values instead of the cases. Given the variaty of values we need to organize the data into <em>intervals</em>. However, when you have a numerical variable you should keep in mind:</p>
+<p>Let’s pay attention now to the values instead of the cases. Given the variety of values we need to organize the data into <em>intervals</em>. However, when you have a numerical variable you should keep in mind:</p>
 <ul>
-<li><p>What is the representative value? Generally the mean, and median in the presence of outliers. How good is the representative value? You need some measure of dispersion. For the mean you have the <strong>standard deviation</strong>, and for the median the <strong>median absolute deviation</strong>. You can also compute a measure of kurtosis.</p></li>
-<li><p>Does the shape of the distribution differs from a <em>normal</em> distribution? If there is asymmetry, is it big enough to show outliers? You need some measure of asymetry and shape (kurtosis).</p></li>
+<li><p>What is the representative value? Generally the mean, or median. How good is the representative value? You need some measure of dispersion. For the mean you have the <strong>standard deviation</strong>, and for the median the <strong>median absolute deviation</strong>.</p></li>
+<li><p>Does the shape of the distribution differs from a <em>normal</em> distribution? If there is asymmetry, is it big enough to show outliers? You need some measure of symmetry and shape (kurtosis).</p></li>
 </ul>
 <p>First, you should take a look at the statistical information:</p>
 <pre class="r"><code>summary(eduwa$Reduced.Lunch)</code></pre>
@@ -312,7 +337,7 @@ b1</code></pre>
 <pre class="r"><code>(upperT=summary(eduwa$Reduced.Lunch)[[5]] + theIQR*1.5)</code></pre>
 <p>Knowing the upper threshold, I can compute the amount of upper outliers:</p>
 <pre class="r"><code>sum(eduwa$Reduced.Lunch&gt;upperT,na.rm = T)</code></pre>
-<p>I can annotate my boxplot with ths value:</p>
+<p>I can annotate my boxplot with this value:</p>
 <pre class="r"><code>annotation=paste0(&#39;Threshold:&#39;,upperT)
 b1 = b1 + geom_hline(yintercept = upperT,
                      color=&#39;grey8&#39;,
@@ -328,7 +353,7 @@ b1</code></pre>
 <pre class="r"><code>b1x=b1+ theme(axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.title.y = element_blank())
-b1x + theme(axis.text.x = element_text(angle = 90,size = 8,vjust = 0.5))</code></pre>
+b1x + theme(axis.text.x = element_text(angle = 40,size = 8,vjust = 0.5))</code></pre>
 <p>In general, measurements and counts are prone to have outliers. It is not common to speak about outliers in ordinal data since they have few levels. From what I just said, the subjective side of finding outliers lies in the decision of <strong>what “normal” means</strong>. In the case of the boxplot, the decision has been to accept as normal the values that have a <em>prudent distance</em> from the first or last quartile. The distance chosen was 1.5 times the difference between the quartiles (a.k.a. Interquartle Range or <strong>IQR</strong>). Then, if a outlier is found, the whisker ends in a position different than the actual minimum or maximal value of the data.</p>
 <p><a href="#TOC">Go to table of contents.</a></p>
 <p><a id="part2"></a></p>
@@ -341,63 +366,6 @@ b1x + theme(axis.text.x = element_text(angle = 90,size = 8,vjust = 0.5))</code><
 <pre class="r"><code>base=ggplot(eduwa) + theme_classic()
 box2=base + geom_boxplot(aes(y=Student.Teacher.Ratio))
 box2 + coord_flip()</code></pre>
-<p>Outliers may tell you that there are different populations in these data. Let me split the data using the thresholds. This time, I will get the thresholds using \emph{ggplot_build}:</p>
-<pre class="r"><code>lowerT=ggplot_build(box2)$data[[1]]$ymin
-upperT=ggplot_build(box2)$data[[1]]$ymax</code></pre>
-<p>Now, let me keep the data without outliers:</p>
-<pre class="r"><code>theVAR=eduwa$Student.Teacher.Ratio
-normals=eduwa[which(theVAR &gt;=lowerT &amp; theVAR &lt;= upperT),]</code></pre>
-<p>Let’s make the histogram with these reduced data:</p>
-<pre class="r"><code>WIDTH=0.6
-baseN=ggplot(normals,
-             aes(x=Student.Teacher.Ratio)) +
-      theme_minimal() 
-histN=baseN+geom_histogram(binwidth=WIDTH)
-histN</code></pre>
-<p>This last subset produces a bell-shaped histogram. Sometimes you can compare it to the gaussian or normal curva that exists with the mean and standard deviation of your data:</p>
-<pre class="r"><code># paramaters for ideal normal curve
-N=nrow(normals)
-MEAN=mean(normals$Student.Teacher.Ratio,
-          na.rm = TRUE)
-SD=sd(normals$Student.Teacher.Ratio,
-      na.rm = TRUE)
-# my function to create a normal curve
-idealNormal=function(aesX)
-            {dnorm(aesX,
-                   mean = MEAN,
-                   sd = SD) * N * WIDTH}</code></pre>
-<p>Let me use the previous data to overlay an ideal normal curve on top the real data:</p>
-<pre class="r"><code># real distribution
-hi2=baseN+ geom_histogram(binwidth = WIDTH,
-                          size = 0.1) 
-# normal distribution
-hi2=hi2+stat_function(fun = idealNormal,
-    color = &quot;red&quot;, size = 1)
-
-hi2</code></pre>
-<p>You do not need to overlay a normal curve in your histograms, unless the audience understands the properties it has. For instance, let me compute the values that are far from the mean by two standard deviations:</p>
-<pre class="r"><code>(thresholds=c(MEAN - 2*SD, MEAN + 2*SD))</code></pre>
-<p>This means that the probability of observing values below or above those values is less than 5%. The data has some of those values:</p>
-<pre class="r"><code>summary(normals$Student.Teacher.Ratio)</code></pre>
-<p>I will use those thresholds to inform the areas where the least probable values reside:</p>
-<pre class="r"><code>hi2=hi2 + geom_vline(xintercept = thresholds,color=&#39;blue&#39;)
-hi2</code></pre>
-<p>You can have a legend for these annotations:</p>
-<pre class="r"><code>hi2=baseN+ geom_histogram(binwidth = WIDTH,
-                   size = 0.1) 
-hi2=hi2+stat_function(fun = idealNormal,
-                      aes(color = &quot;Normal&quot;))
-
-hi2=hi2 + geom_vline(aes(xintercept =thresholds[1],
-                        color=&#39;TwoSigma1&#39;),
-                     show.legend = F)
-hi2=hi2 + geom_vline(aes(xintercept =thresholds[2],
-                        color=&#39;TwoSigma2&#39;),
-                     show.legend = F)
-hi2=hi2 + scale_color_manual(name = &quot;References&quot;,
-                        values = c(Normal = &quot;red&quot;,TwoSigma1 = &quot;grey&quot;,TwoSigma2 = &quot;black&quot;),
-                        labels=c(&quot;Normal Curve&quot;,&quot;-2sd&quot;,&quot;+2sd&quot;))
-hi2 </code></pre>
 <p>The presence of outliers may mean the existence of <strong>inequality</strong>. Let’s try the Lorenz curve:</p>
 <pre class="r"><code>library(gglorenz)
 
@@ -411,12 +379,12 @@ lorenz</code></pre>
 <pre class="r"><code>#for titles
 HorizontalTitle=&quot;Cummulative Percent of Schools&quot;
 VerticalTitle=&quot;Cummulative percent of beneficiaries&quot;
-plotTitle=&quot;How much receives\nthe 20% that receives most?&quot;
+plotTitle=&quot;What share of schools \ncount for the lower 50% of the beneficiaries?&quot;
 sourceText=&quot;Source: US Department of Education&quot;
 
 # text for annotation
 ## computing
-gini=Gini(eduwa$Reduced.Lunch,na.rm = T)
+gini=DescTools::Gini(eduwa$Reduced.Lunch,na.rm = T)
 ## pasting message 
 GINItext=paste(&quot;Gini:&quot;,round(gini,3))
 
@@ -447,6 +415,7 @@ lorenz= lorenz +  labs(x = HorizontalTitle,
                        title = plotTitle,
                        caption = sourceText)
 lorenz</code></pre>
+<p>The more the Lorenz curve approaches the diagonal, the more equality (and the smaller the Gini index).</p>
 <p>Exercise:</p>
 <p>For the final project, you should choose one of the plots shown here. Adapt one of the plots in this session, complete it with the missing elements, and make any improvement you consider important.</p>
 <hr />
