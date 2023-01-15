@@ -128,7 +128,7 @@ txtUpper=paste0('Threshold:',upperT)
 txtOut=paste0('#Outlying schools: ',numOutliers)
 
 b1_line = b1 + geom_hline(yintercept = upperT,
-                            color='grey80',
+                            color='red',
                             linetype="dotted",
                             size=2) 
 b1_upper_line=b1_line + annotate(geom = 'text',
@@ -245,11 +245,12 @@ library(ggplot2)
 base= ggplot(eduwa)  
 h1= base + geom_histogram(aes(x = Reduced.Lunch),
                           binwidth = WIDTH,
-                          fill='grey70') 
-h1 
+                          fill='black') 
+h1=h1 + labs(y="count")
+h1
 ```
 
-let's do some annotations:
+Let's do some annotations:
 
 ```{r, eval=TRUE,warning=FALSE, message=FALSE}
 # texts
@@ -290,8 +291,11 @@ summary(eduwa$Student.Teacher.Ratio)
 Notice that the maximum value is very far from the mean and the median, this announces the presence of outliers, which can be revealed with a boxplot:
 
 ```{r, eval=TRUE,warning=FALSE, message=FALSE}
-base=ggplot(eduwa) + theme_classic()
-box2=base + geom_boxplot(aes(y=Student.Teacher.Ratio))
+base=ggplot(eduwa) + theme_light()
+box2=base + geom_boxplot(aes(y=Student.Teacher.Ratio)) + 
+                      theme(axis.text.y = element_blank(),
+                            axis.ticks.y = element_blank(),
+                            axis.title.y = element_blank())
 box2=box2 + coord_flip()
 box2
 ```
@@ -301,7 +305,8 @@ Now, let's see if this is a multimodal distribution (more than one peak). Let's 
 
 ```{r, warning=FALSE, message=FALSE}
 hist2=base + geom_histogram(aes(x=Student.Teacher.Ratio))
-hist2 
+hist2=hist2 + labs(y='count')
+hist2
 ```
 
 You can recover the count of each bar in the histogram using **ggplot_built**:
@@ -340,12 +345,13 @@ hist2ann=hist2 + geom_hline(yintercept =ModeCountY,
              label=ModeCountY,
               y = ModeCountY+40,
               x=PositionCountX,
+             color='red',
               angle=0) +
     annotate(geom = 'text',
              label=ModeMessage,
               y = ModeCountY+40,
               x=PositionCountX+90,
-             color='grey70',
+             color='red',
               angle=0)
 hist2ann
 
@@ -367,7 +373,7 @@ As you see, that is not an exact match. An alternative can be the **violin** plo
 base=ggplot(eduwa, aes(x=0,y=Student.Teacher.Ratio))+
             theme_classic()
 
-vio=base+geom_violin(trim=FALSE, fill="gray90")
+vio=base+geom_violin(trim=FALSE, fill="orange")
 
 viobox=vio+geom_boxplot(width=0.2)
 viobox=viobox + coord_flip()
