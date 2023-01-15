@@ -53,10 +53,10 @@ There are too many different values. Then, the bar plot is not a good idea (and 
 
 ```{r, eval=TRUE}
 lunchDF=as.data.frame(table(eduwa$Reduced.Lunch))
-names(lunchDF)=c("Beneficiaries","Count")
+names(lunchDF)=c("Reduced_Lunch_Beneficiaries","Count")
 
 library(ggplot2)
-base1=ggplot(data=lunchDF, aes(x=Beneficiaries,Count))
+base1=ggplot(data=lunchDF, aes(x=Reduced_Lunch_Beneficiaries,Count))
 bar1=base1+geom_bar(stat = "identity")
 bar1
 ```
